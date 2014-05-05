@@ -7,11 +7,23 @@ package com.cybercom.svp.machine.gui;
 
 import com.cybercom.svp.machine.dto.ColorBlock;
 import com.cybercom.svp.machine.dto.Embroidery;
+import com.cybercom.svp.machine.dto.FirmwareAssembleResponse;
+import com.cybercom.svp.machine.dto.FirmwareDownloadRequest;
+import com.cybercom.svp.machine.dto.FirmwareDownloadResponse;
+import com.cybercom.svp.machine.dto.FirmwareUpdateRequest;
+import com.cybercom.svp.machine.dto.FirmwareUpdateRequest.Units;
+import com.cybercom.svp.machine.dto.FirmwareUpdateRequest.Units.Unit;
+import com.cybercom.svp.machine.dto.FirmwareUpdateResponse;
 import com.cybercom.svp.machine.dto.LoginMachine;
 import com.cybercom.svp.machine.dto.MachineEvent;
 import com.cybercom.svp.machine.dto.MachineEvent.ExtraParameters;
 import com.cybercom.svp.machine.dto.MachineEvent.RequiredParameters;
 import com.cybercom.svp.machine.dto.MachineEvent.RequiredParameters.Parameter;
+import java.awt.Color;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -20,14 +32,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractButton;
 import javax.swing.DefaultListModel;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.JAXBIntrospector;
 import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -142,6 +162,7 @@ public class MachineForm extends javax.swing.JFrame {
     private Thread processThread = null;
     private boolean interrupted = false;
     private MachineEvent machineEvent;
+    private FirmwareUpdateRequest firmwareUpdateRequestSetting;
 
     private class ProcessRunnable implements Runnable {
 
@@ -253,6 +274,27 @@ public class MachineForm extends javax.swing.JFrame {
         jPanel4 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         listStatus = new javax.swing.JList();
+        jPanel5 = new javax.swing.JPanel();
+        buttomLoadFirmwareSettingFile = new javax.swing.JButton();
+        buttonCheckFirmware = new javax.swing.JButton();
+        buttonCreateAssembly = new javax.swing.JButton();
+        jLabel11 = new javax.swing.JLabel();
+        jLabel12 = new javax.swing.JLabel();
+        textModel = new javax.swing.JTextField();
+        textSystemVersion = new javax.swing.JTextField();
+        textCheckFirmwareResult = new javax.swing.JTextField();
+        jLabel13 = new javax.swing.JLabel();
+        jLabel14 = new javax.swing.JLabel();
+        jLabel15 = new javax.swing.JLabel();
+        buttonDownload = new javax.swing.JButton();
+        jLabel16 = new javax.swing.JLabel();
+        textChunkSize = new javax.swing.JTextField();
+        jLabel17 = new javax.swing.JLabel();
+        textDirectory = new javax.swing.JTextField();
+        textAssemblyId = new javax.swing.JTextField();
+        textFileSize = new javax.swing.JTextField();
+        textMD5 = new javax.swing.JTextField();
+        buttomLoadDefaultFirmwareSetting = new javax.swing.JButton();
 
         jLabel2.setText("jLabel2");
 
@@ -514,13 +556,183 @@ public class MachineForm extends javax.swing.JFrame {
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 533, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 533, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE)
+            .addComponent(jScrollPane1)
+        );
+
+        jPanel5.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
+
+        buttomLoadFirmwareSettingFile.setText("Load firmware setting from file...");
+        buttomLoadFirmwareSettingFile.setToolTipText("Load machines current formware settings from file");
+        buttomLoadFirmwareSettingFile.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttomLoadFirmwareSettingFileActionPerformed(evt);
+            }
+        });
+
+        buttonCheckFirmware.setText("Check firmware");
+        buttonCheckFirmware.setEnabled(false);
+        buttonCheckFirmware.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonCheckFirmwareActionPerformed(evt);
+            }
+        });
+
+        buttonCreateAssembly.setText("Create Assembly");
+        buttonCreateAssembly.setToolTipText("");
+        buttonCreateAssembly.setEnabled(false);
+        buttonCreateAssembly.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonCreateAssemblyActionPerformed(evt);
+            }
+        });
+
+        jLabel11.setText("Model");
+
+        jLabel12.setText("System version");
+
+        textModel.setEditable(false);
+
+        textSystemVersion.setEditable(false);
+
+        textCheckFirmwareResult.setEditable(false);
+
+        jLabel13.setText("Assembly ID");
+
+        jLabel14.setText("File size");
+
+        jLabel15.setText("MD5");
+
+        buttonDownload.setText("Download");
+        buttonDownload.setEnabled(false);
+        buttonDownload.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonDownloadActionPerformed(evt);
+            }
+        });
+
+        jLabel16.setText("Chunk size");
+
+        textChunkSize.setText("5000000");
+
+        jLabel17.setText("Directory");
+
+        textDirectory.setText("c:\\temp");
+
+        textAssemblyId.setEditable(false);
+
+        textFileSize.setEditable(false);
+
+        textMD5.setEditable(false);
+
+        buttomLoadDefaultFirmwareSetting.setText("Load default firmware setting ");
+        buttomLoadDefaultFirmwareSetting.setToolTipText("Load machines current formware settings from file");
+        buttomLoadDefaultFirmwareSetting.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttomLoadDefaultFirmwareSettingActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addComponent(buttonCheckFirmware)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(textCheckFirmwareResult))
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(buttonCreateAssembly)
+                            .addComponent(buttonDownload))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel5Layout.createSequentialGroup()
+                                .addComponent(jLabel14)
+                                .addGap(42, 42, 42)
+                                .addComponent(textFileSize))
+                            .addGroup(jPanel5Layout.createSequentialGroup()
+                                .addComponent(jLabel13)
+                                .addGap(18, 18, 18)
+                                .addComponent(textAssemblyId))
+                            .addGroup(jPanel5Layout.createSequentialGroup()
+                                .addComponent(jLabel15)
+                                .addGap(63, 63, 63)
+                                .addComponent(textMD5))
+                            .addGroup(jPanel5Layout.createSequentialGroup()
+                                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel16)
+                                    .addComponent(jLabel17))
+                                .addGap(27, 27, 27)
+                                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel5Layout.createSequentialGroup()
+                                        .addComponent(textChunkSize, javax.swing.GroupLayout.PREFERRED_SIZE, 125, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(0, 0, Short.MAX_VALUE))
+                                    .addComponent(textDirectory)))))
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(buttomLoadFirmwareSettingFile, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel5Layout.createSequentialGroup()
+                                .addComponent(jLabel11)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(textModel, javax.swing.GroupLayout.PREFERRED_SIZE, 186, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel5Layout.createSequentialGroup()
+                                .addComponent(jLabel12)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(textSystemVersion))
+                            .addComponent(buttomLoadDefaultFirmwareSetting, javax.swing.GroupLayout.DEFAULT_SIZE, 273, Short.MAX_VALUE))))
+                .addContainerGap())
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(buttomLoadFirmwareSettingFile)
+                    .addComponent(buttomLoadDefaultFirmwareSetting))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel11)
+                    .addComponent(textModel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel12)
+                    .addComponent(textSystemVersion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(12, 12, 12)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(buttonCheckFirmware)
+                    .addComponent(textCheckFirmwareResult, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(buttonCreateAssembly)
+                    .addComponent(jLabel13)
+                    .addComponent(textAssemblyId, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel14)
+                    .addComponent(textFileSize, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel15)
+                    .addComponent(textMD5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(buttonDownload)
+                    .addComponent(jLabel16)
+                    .addComponent(textChunkSize, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel17)
+                    .addComponent(textDirectory, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(15, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -528,27 +740,34 @@ public class MachineForm extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addContainerGap(17, Short.MAX_VALUE))
+                .addGap(24, 24, 24)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(23, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(195, 195, 195))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(174, 174, 174))))
         );
 
         pack();
@@ -597,14 +816,14 @@ public class MachineForm extends javax.swing.JFrame {
                 if (button.isSelected()) {
                     if (button == buttonBobbinEmpty) {
                         sendEvent(objToXml(MachineEvent.class, getBobbinEmptyEventfromMachine()));
-                    }else if(button == buttonChangeColor){
+                    } else if (button == buttonChangeColor) {
                         sendEvent(objToXml(MachineEvent.class, getChangeThreadEventfromMachine(1)));
-                    }else if(button == buttonCutThreadEnds){
+                    } else if (button == buttonCutThreadEnds) {
                         sendEvent(objToXml(MachineEvent.class, getCutThreadEventfromMachine()));
-                    }else if(button == buttonThreadBreak){
+                    } else if (button == buttonThreadBreak) {
                         sendEvent(objToXml(MachineEvent.class, getThreadBreakEventfromMachine()));
                     }
-                    
+
                 }
             }
         } catch (Exception ex) {
@@ -616,6 +835,224 @@ public class MachineForm extends javax.swing.JFrame {
     private void buttonThreadBreakActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonThreadBreakActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_buttonThreadBreakActionPerformed
+
+    private void buttomLoadFirmwareSettingFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttomLoadFirmwareSettingFileActionPerformed
+        JFileChooser fileDialog = new JFileChooser();
+        fileDialog.setDialogTitle("Select firmware file");
+
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("XML file", "xml");
+        fileDialog.setFileFilter(filter);
+        fileDialog.setDialogType(JFileChooser.OPEN_DIALOG);
+        int result = fileDialog.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+
+            try {
+                String xml = FileUtils.readFileToString(fileDialog.getSelectedFile());
+                firmwareUpdateRequestSetting = xmlToObj(FirmwareUpdateRequest.class, xml);
+                updateFirmwareSettings();
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }//GEN-LAST:event_buttomLoadFirmwareSettingFileActionPerformed
+
+    private void buttonCheckFirmwareActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCheckFirmwareActionPerformed
+
+        try {
+            validateForMachineActions();
+
+            ResteasyClient client = new ResteasyClientBuilder().build();
+            String server = (String) cbServer.getSelectedItem();
+
+            addMessage("Sending firmware check to server");
+            Response response = client.target(server + "/server/rest/machine/firmware/check")
+                    .request(MediaType.APPLICATION_XML)
+                    .header("Session-Token", textSessionToken.getText())
+                    .header("Machine-Id", textMachineId.getText())
+                    .header("Machine-Brand", cbBrand.getSelectedItem())
+                    .post(Entity.entity(objToXml(FirmwareUpdateRequest.class, firmwareUpdateRequestSetting), MediaType.APPLICATION_XML));
+
+            addMessage("Response " + response.getStatus());
+            if (response.getStatus() != 200) {
+                throw new Exception("Error from server " + response.getStatus());
+            }
+            String resp = response.readEntity(String.class);
+            FirmwareUpdateResponse firmwareUpdateResponse = xmlToObj(FirmwareUpdateResponse.class, resp);
+
+            if (firmwareUpdateResponse.getUnits() == null || firmwareUpdateResponse.getUnits().getUnit().isEmpty()) {
+                addMessage("Nothing to update");
+                textCheckFirmwareResult.setBackground(Color.GREEN);
+                textCheckFirmwareResult.setText("Nothing to update");
+            } else {
+                textCheckFirmwareResult.setBackground(Color.RED);
+                textCheckFirmwareResult.setText("Update is available");
+                addMessage("Update is available");
+                for (FirmwareUpdateResponse.Units.Unit unit : firmwareUpdateResponse.getUnits().getUnit()) {
+                    addMessage("------  Unit to update:" + unit.getName());
+                }
+                buttonDownload.setEnabled(true);
+            }
+            response.close();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
+        }
+    }//GEN-LAST:event_buttonCheckFirmwareActionPerformed
+
+    private void buttonCreateAssemblyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCreateAssemblyActionPerformed
+        try {
+            validateForMachineActions();
+
+            ResteasyClient client = new ResteasyClientBuilder().build();
+            String server = (String) cbServer.getSelectedItem();
+
+            addMessage("Sending firmware assebly request to server");
+            Response response = client.target(server + "/server/rest/machine/firmware/assemble")
+                    .request(MediaType.APPLICATION_XML)
+                    .header("Session-Token", textSessionToken.getText())
+                    .header("Machine-Id", textMachineId.getText())
+                    .header("Machine-Brand", cbBrand.getSelectedItem())
+                    .post(Entity.entity(objToXml(FirmwareUpdateRequest.class, firmwareUpdateRequestSetting), MediaType.APPLICATION_XML));
+
+            addMessage("Response " + response.getStatus());
+            if (response.getStatus() == 500) {
+                throw new Exception("Error from server " + response.getStatus());
+            } else if (response.getStatus() == 474) {
+                throw new Exception("No firmware is available");
+            } else if (response.getStatus() == 475) {
+                throw new Exception("Could not create firmware assembly");
+            }
+
+            String resp = response.readEntity(String.class);
+            FirmwareAssembleResponse assembleResponse = xmlToObj(FirmwareAssembleResponse.class, resp);
+
+            textAssemblyId.setText(assembleResponse.getAssemblyId());
+            textFileSize.setText(String.valueOf(assembleResponse.getFileSize()));
+            textMD5.setText(assembleResponse.getMd5());
+
+            response.close();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
+        }
+
+    }//GEN-LAST:event_buttonCreateAssemblyActionPerformed
+
+    private void buttonDownloadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonDownloadActionPerformed
+        try {
+            validateForMachineActions();
+            File downloadDirectory = new File(textDirectory.getText());
+            if (!downloadDirectory.exists() || !downloadDirectory.canWrite()) {
+                throw new Exception("Can't write files to " + textDirectory.getText());
+            }
+
+            //Ctreate temp file
+            File tempFile = File.createTempFile("FIRMWARE_", ".zip", downloadDirectory);
+
+            ResteasyClient client = new ResteasyClientBuilder().build();
+            String server = (String) cbServer.getSelectedItem();
+
+            //Calculate nr of chunks
+            long fileSize = Long.parseLong(textFileSize.getText());
+            long chunkSize = Long.parseLong(textChunkSize.getText());
+
+            int numberOfChunks = (int) Math.ceil((float) fileSize / chunkSize);
+            try (FileOutputStream firmwareFile = new FileOutputStream(tempFile)) {
+
+                for (int i = 0; i < numberOfChunks; i++) {
+
+                    FirmwareDownloadRequest request = new FirmwareDownloadRequest();
+                    request.setAssemblyId(textAssemblyId.getText());
+                    request.setChunkIndex(i);
+                    request.setChunkSize(chunkSize);
+
+                    addMessage("Sending firmware download request to server: chunk " + i);
+                    Response response = client.target(server + "/server/rest/machine/firmware/download")
+                            .request(MediaType.APPLICATION_XML)
+                            .header("Session-Token", textSessionToken.getText())
+                            .header("Machine-Id", textMachineId.getText())
+                            .header("Machine-Brand", cbBrand.getSelectedItem())
+                            .post(Entity.entity(objToXml(FirmwareDownloadRequest.class, request), MediaType.APPLICATION_XML));
+
+                    addMessage("Response " + response.getStatus());
+                    if (response.getStatus() == 500) {
+                        throw new Exception("Error from server " + response.getStatus());
+                    }
+
+                    String resp = response.readEntity(String.class);
+                    FirmwareDownloadResponse downloadResponse = xmlToObj(FirmwareDownloadResponse.class, resp);
+                    StringBuilder result = new StringBuilder();
+                    result.append("Downloaded chunk ").append(i).append(" size ").append(downloadResponse.getChunkSize());
+                    addMessage(result.toString());
+
+                    //Calculate checksum for this chunk
+                    String md5 = DigestUtils.md5Hex(downloadResponse.getChunk());
+
+                    if (StringUtils.equals(md5, downloadResponse.getMd5())) {
+                        addMessage("Checksum ND5 is correct");
+                    } else {
+                        throw new Exception("Check sum is not correct !!");
+                    }
+
+                    response.close();
+                    firmwareFile.write(downloadResponse.getChunk());
+                }
+                
+                addMessage("File " + tempFile.getName() + " is saved.");
+                String md5 = DigestUtils.md5Hex(FileUtils.readFileToByteArray(tempFile));
+                if (StringUtils.equals(md5, textMD5.getText())) {
+                    addMessage("Checksum for entire download is correct");
+                }else{
+                    addMessage("Checksum for entire download is NOT correct: " + md5);
+                }
+                
+                
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
+        }
+
+    }//GEN-LAST:event_buttonDownloadActionPerformed
+
+    private void buttomLoadDefaultFirmwareSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttomLoadDefaultFirmwareSettingActionPerformed
+        firmwareUpdateRequestSetting = new FirmwareUpdateRequest();
+
+        firmwareUpdateRequestSetting.setProductId("AHV291_Prototype");
+        firmwareUpdateRequestSetting.setSystemVersion("123");
+        firmwareUpdateRequestSetting.setUnits(new Units());
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("u-boot", "445b8e4076104e9f811b08835be97538"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("gui", "ec2e4e3d09501b8523d28a5b14aeb38a"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("partitioning-rootfs", "b2d4b68605166605c5d62a6df7a998df"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("mainnode", "8b6b3019b9cbc56118c8fb9eb4c3e989"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("subnode", "1074ef94de55d9acea913f9ca4ea985a"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("licenses", "0bff1f96ff1bace72bedfbfc852ffb84"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("kernel", "ccc007f1bfd2146026cd3728d5375034"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("designs-and-patterns", "18bb207bf9f40bf24c32362fc4de010a"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("update-system", "272e5826b71a22261ae7911f6e0975fd"));
+        firmwareUpdateRequestSetting.getUnits()
+                .getUnit()
+                .add(createUnit("sounds", "37f37eee0f62e661759338c3f81254a1"));
+
+        updateFirmwareSettings();
+
+    }//GEN-LAST:event_buttomLoadDefaultFirmwareSettingActionPerformed
 
     /**
      * @param args the command line arguments
@@ -653,9 +1090,14 @@ public class MachineForm extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton buttomLoadDefaultFirmwareSetting;
+    private javax.swing.JButton buttomLoadFirmwareSettingFile;
     private javax.swing.JRadioButton buttonBobbinEmpty;
     private javax.swing.JRadioButton buttonChangeColor;
+    private javax.swing.JButton buttonCheckFirmware;
+    private javax.swing.JButton buttonCreateAssembly;
     private javax.swing.JRadioButton buttonCutThreadEnds;
+    private javax.swing.JButton buttonDownload;
     private javax.swing.JButton buttonLogin;
     private javax.swing.JButton buttonLogout;
     private javax.swing.JButton buttonSendNotification;
@@ -666,6 +1108,13 @@ public class MachineForm extends javax.swing.JFrame {
     private javax.swing.ButtonGroup groupNotification;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
+    private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -678,14 +1127,23 @@ public class MachineForm extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JList listStatus;
+    private javax.swing.JTextField textAssemblyId;
+    private javax.swing.JTextField textCheckFirmwareResult;
+    private javax.swing.JTextField textChunkSize;
     private javax.swing.JTextField textColor;
+    private javax.swing.JTextField textDirectory;
     private javax.swing.JTextField textEmail;
+    private javax.swing.JTextField textFileSize;
+    private javax.swing.JTextField textMD5;
     private javax.swing.JTextField textMachineId;
+    private javax.swing.JTextField textModel;
     private javax.swing.JPasswordField textPassword;
     private javax.swing.JTextField textSessionToken;
     private javax.swing.JTextField textStitchesColorblock;
+    private javax.swing.JTextField textSystemVersion;
     private javax.swing.JTextField textTotalStitches;
     // End of variables declaration//GEN-END:variables
 
@@ -757,6 +1215,18 @@ public class MachineForm extends javax.swing.JFrame {
         StringWriter sw = new StringWriter();
         jaxbMarshaller.marshal(object, sw);
         return sw.toString();
+    }
+
+    public static <T> T xmlToObj(final Class<T> clazz, String xml) throws JAXBException {
+        JAXBContext jaxbContext = JAXBContext.newInstance(clazz);
+
+        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+        Object obj;
+        try (StringReader reader = new StringReader(xml)) {
+            obj = jaxbUnmarshaller.unmarshal(reader);
+        }
+
+        return (T) obj;
     }
 
     private String sendLogin(LoginMachine login) throws JAXBException {
@@ -1028,6 +1498,39 @@ public class MachineForm extends javax.swing.JFrame {
         parameter.setType(type);
         parameter.setValue(value);
         return parameter;
+    }
+
+    private Unit createUnit(String name, String checksum) {
+        Unit unit = new Unit();
+        unit.setName(name);
+        unit.setChecksum(checksum);
+
+        return unit;
+    }
+
+    private void updateFirmwareSettings() {
+        StringBuilder units = new StringBuilder();
+        units.append("Units in this firmware:\r\n");
+        units.append("=======================\r\n");
+        for (Unit unit : firmwareUpdateRequestSetting.getUnits().getUnit()) {
+            units.append(unit.getName());
+            units.append(" ---- ");
+            units.append(unit.getChecksum());
+            units.append("\r\n");
+        }
+
+        JOptionPane.showMessageDialog(this, new JTextArea(units.toString()));
+
+        buttonCheckFirmware.setEnabled(true);
+        buttonCreateAssembly.setEnabled(true);
+        textModel.setText(firmwareUpdateRequestSetting.getProductId());
+        textSystemVersion.setText(firmwareUpdateRequestSetting.getSystemVersion());
+        textCheckFirmwareResult.setText("Not checked");
+        textCheckFirmwareResult.setBackground(Color.BLUE);
+        textAssemblyId.setText("");
+        textFileSize.setText("");
+        textMD5.setText("");
+
     }
 
 }
