@@ -22,12 +22,12 @@ import com.cybercom.svp.machine.dto.MachineEvent.RequiredParameters.Parameter;
 import java.awt.Color;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractButton;
@@ -36,14 +36,12 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.JAXBIntrospector;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -158,6 +156,8 @@ public class MachineForm extends javax.swing.JFrame {
     public final static String EVENT_BOBBIN_EMPTY = "bobbin-empty";
 
     private boolean loggedIn = false;
+    private enum Mode{PRODUCTION,DEVLOP}
+    private Mode selectedMode = Mode.DEVLOP;
     private final DefaultListModel listModelStatus = new DefaultListModel();
     private Thread processThread = null;
     private boolean interrupted = false;
@@ -242,6 +242,7 @@ public class MachineForm extends javax.swing.JFrame {
 
         jLabel2 = new javax.swing.JLabel();
         groupNotification = new javax.swing.ButtonGroup();
+        groupMode = new javax.swing.ButtonGroup();
         jPanel1 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         textMachineId = new javax.swing.JTextField();
@@ -249,14 +250,20 @@ public class MachineForm extends javax.swing.JFrame {
         jLabel4 = new javax.swing.JLabel();
         textEmail = new javax.swing.JTextField();
         textPassword = new javax.swing.JPasswordField();
-        jLabel5 = new javax.swing.JLabel();
-        cbBrand = new javax.swing.JComboBox();
         buttonLogin = new javax.swing.JButton();
         jLabel6 = new javax.swing.JLabel();
         textSessionToken = new javax.swing.JTextField();
         buttonLogout = new javax.swing.JButton();
         jLabel7 = new javax.swing.JLabel();
         cbServer = new javax.swing.JComboBox();
+        jLabel18 = new javax.swing.JLabel();
+        radioDevelop = new javax.swing.JRadioButton();
+        radioProduction = new javax.swing.JRadioButton();
+        jLabel5 = new javax.swing.JLabel();
+        textUserUUID = new javax.swing.JTextField();
+        jLabel19 = new javax.swing.JLabel();
+        cbBrand = new javax.swing.JComboBox();
+        buttonGenUUID = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         buttonStartStopSewing = new javax.swing.JButton();
         jLabel8 = new javax.swing.JLabel();
@@ -304,13 +311,9 @@ public class MachineForm extends javax.swing.JFrame {
 
         jLabel1.setText("Machine ID");
 
-        jLabel3.setText("Email");
+        jLabel3.setText("Brand");
 
         jLabel4.setText("Password");
-
-        jLabel5.setText("Brand");
-
-        cbBrand.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "PFAFF", "VIKING" }));
 
         buttonLogin.setText("Login");
         buttonLogin.addActionListener(new java.awt.event.ActionListener() {
@@ -335,16 +338,56 @@ public class MachineForm extends javax.swing.JFrame {
         jLabel7.setText("Server");
 
         cbServer.setEditable(true);
-        cbServer.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "http://falsterbo.hard.ware.fi:8080/", "http://localhost:8080/" }));
+        cbServer.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "http://10.2.35.6:8080/", "http://localhost:8080/" }));
+        cbServer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbServerActionPerformed(evt);
+            }
+        });
+
+        jLabel18.setText("Mode");
+
+        groupMode.add(radioDevelop);
+        radioDevelop.setSelected(true);
+        radioDevelop.setText("Develop");
+        radioDevelop.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                radioDevelopActionPerformed(evt);
+            }
+        });
+
+        groupMode.add(radioProduction);
+        radioProduction.setText("Production");
+        radioProduction.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                radioProductionActionPerformed(evt);
+            }
+        });
+
+        jLabel5.setText("User UUID");
+
+        textUserUUID.setEnabled(false);
+
+        jLabel19.setText("Email");
+
+        cbBrand.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "PFAFF", "VIKING" }));
+
+        buttonGenUUID.setText("Generate UUID");
+        buttonGenUUID.setEnabled(false);
+        buttonGenUUID.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonGenUUIDActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -357,24 +400,34 @@ public class MachineForm extends javax.swing.JFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel1)
-                                    .addComponent(jLabel3)
+                                    .addComponent(jLabel18)
                                     .addComponent(jLabel5)
-                                    .addComponent(jLabel7))
+                                    .addComponent(jLabel3)
+                                    .addComponent(jLabel7)
+                                    .addComponent(jLabel19))
                                 .addGap(30, 30, 30)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(textEmail)
                                     .addComponent(textMachineId)
+                                    .addComponent(cbServer, 0, 259, Short.MAX_VALUE)
+                                    .addComponent(textUserUUID)
                                     .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addComponent(cbBrand, javax.swing.GroupLayout.PREFERRED_SIZE, 165, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(0, 0, Short.MAX_VALUE))
-                                    .addComponent(cbServer, 0, 259, Short.MAX_VALUE))))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(cbBrand, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addComponent(radioDevelop)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addComponent(radioProduction)))
+                                        .addGap(0, 0, Short.MAX_VALUE)))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(buttonGenUUID)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(buttonLogin)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)))
-                .addComponent(buttonLogout)
-                .addContainerGap())
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(buttonLogout)
+                        .addGap(153, 153, 153))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -385,16 +438,13 @@ public class MachineForm extends javax.swing.JFrame {
                     .addComponent(cbServer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(textMachineId, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel18)
+                    .addComponent(radioDevelop)
+                    .addComponent(radioProduction))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
-                    .addComponent(cbBrand, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(textEmail, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(textEmail, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel19))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
@@ -403,11 +453,24 @@ public class MachineForm extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel6)
                     .addComponent(textSessionToken, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(buttonLogin)
                     .addComponent(buttonLogout))
-                .addContainerGap())
+                .addGap(33, 33, 33)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(textUserUUID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel5)
+                    .addComponent(buttonGenUUID))
+                .addGap(31, 31, 31)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(textMachineId, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(cbBrand, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(36, 36, 36))
         );
 
         jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
@@ -562,7 +625,7 @@ public class MachineForm extends javax.swing.JFrame {
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 342, Short.MAX_VALUE)
         );
 
         jPanel5.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
@@ -754,20 +817,20 @@ public class MachineForm extends javax.swing.JFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap()
+                        .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(195, 195, 195))
+                        .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(174, 174, 174))))
+                        .addGap(29, 29, 29)
+                        .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(174, 174, 174))
         );
 
         pack();
@@ -1054,6 +1117,24 @@ public class MachineForm extends javax.swing.JFrame {
 
     }//GEN-LAST:event_buttomLoadDefaultFirmwareSettingActionPerformed
 
+    private void cbServerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbServerActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cbServerActionPerformed
+
+    private void radioDevelopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radioDevelopActionPerformed
+        selectedMode = Mode.DEVLOP;
+        enableDisableComponents();
+    }//GEN-LAST:event_radioDevelopActionPerformed
+
+    private void radioProductionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radioProductionActionPerformed
+        selectedMode = Mode.PRODUCTION;
+        enableDisableComponents();
+    }//GEN-LAST:event_radioProductionActionPerformed
+
+    private void buttonGenUUIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonGenUUIDActionPerformed
+        textUserUUID.setText(UUID.randomUUID().toString());
+    }//GEN-LAST:event_buttonGenUUIDActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1098,6 +1179,7 @@ public class MachineForm extends javax.swing.JFrame {
     private javax.swing.JButton buttonCreateAssembly;
     private javax.swing.JRadioButton buttonCutThreadEnds;
     private javax.swing.JButton buttonDownload;
+    private javax.swing.JButton buttonGenUUID;
     private javax.swing.JButton buttonLogin;
     private javax.swing.JButton buttonLogout;
     private javax.swing.JButton buttonSendNotification;
@@ -1105,6 +1187,7 @@ public class MachineForm extends javax.swing.JFrame {
     private javax.swing.JRadioButton buttonThreadBreak;
     private javax.swing.JComboBox cbBrand;
     private javax.swing.JComboBox cbServer;
+    private javax.swing.ButtonGroup groupMode;
     private javax.swing.ButtonGroup groupNotification;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
@@ -1115,6 +1198,8 @@ public class MachineForm extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -1130,6 +1215,8 @@ public class MachineForm extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JList listStatus;
+    private javax.swing.JRadioButton radioDevelop;
+    private javax.swing.JRadioButton radioProduction;
     private javax.swing.JTextField textAssemblyId;
     private javax.swing.JTextField textCheckFirmwareResult;
     private javax.swing.JTextField textChunkSize;
@@ -1145,6 +1232,7 @@ public class MachineForm extends javax.swing.JFrame {
     private javax.swing.JTextField textStitchesColorblock;
     private javax.swing.JTextField textSystemVersion;
     private javax.swing.JTextField textTotalStitches;
+    private javax.swing.JTextField textUserUUID;
     // End of variables declaration//GEN-END:variables
 
     private void login() {
@@ -1237,7 +1325,7 @@ public class MachineForm extends javax.swing.JFrame {
 
         ResteasyClient client = new ResteasyClientBuilder().build();
         Response response = client
-                .target(server + "/server/rest/im/loginMachine")
+                .target(server + "/server/rest/im/login")
                 .request(MediaType.APPLICATION_XML)
                 .header("Machine-Id", textMachineId.getText())
                 .header("Machine-Brand", cbBrand.getSelectedItem())
@@ -1263,7 +1351,7 @@ public class MachineForm extends javax.swing.JFrame {
         ResteasyClient client = new ResteasyClientBuilder().build();
 
         String server = (String) cbServer.getSelectedItem();
-        Response response = client.target(server + "/server/rest/im/logoutMachine")
+        Response response = client.target(server + "/server/rest/im/logout")
                 .request(MediaType.APPLICATION_XML)
                 .header("Session-Token", textSessionToken.getText())
                 .header("Machine-Id", textMachineId.getText())
@@ -1278,14 +1366,18 @@ public class MachineForm extends javax.swing.JFrame {
     }
 
     private void enableDisableComponents() {
-        textEmail.setEnabled(!loggedIn);
-        textMachineId.setEnabled(!loggedIn);
-        textPassword.setEnabled(!loggedIn);
-        if (!loggedIn) {
+        textEmail.setEnabled(!loggedIn && selectedMode==Mode.DEVLOP);
+        textPassword.setEnabled(!loggedIn && selectedMode==Mode.DEVLOP);
+        if (!loggedIn && selectedMode==Mode.DEVLOP) {
             textSessionToken.setText(null);
         }
-        buttonLogin.setEnabled(!loggedIn);
-        buttonLogout.setEnabled(loggedIn);
+        buttonLogin.setEnabled(!loggedIn && selectedMode==Mode.DEVLOP);
+        buttonLogout.setEnabled(loggedIn && selectedMode==Mode.DEVLOP);
+        
+        buttonGenUUID.setEnabled(selectedMode==Mode.PRODUCTION);
+        textUserUUID.setEnabled(selectedMode==Mode.PRODUCTION);
+        
+        
         //buttonSendNotification.setEnabled(loggedIn);
         //buttonStartStopSewing.setEnabled(loggedIn);
     }
