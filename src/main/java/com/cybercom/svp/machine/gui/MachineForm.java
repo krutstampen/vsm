@@ -39,6 +39,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -55,6 +57,8 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
  * @author hajoh1
  */
 public class MachineForm extends javax.swing.JFrame {
+    
+    
 
     /**
      * thread-breakage
@@ -454,7 +458,7 @@ public class MachineForm extends javax.swing.JFrame {
                     .addComponent(jLabel6)
                     .addComponent(textSessionToken, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(buttonLogin)
                     .addComponent(buttonLogout))
                 .addGap(33, 33, 33)
@@ -931,7 +935,7 @@ public class MachineForm extends javax.swing.JFrame {
             addMessage("Sending firmware check to server");
             Response response = client.target(server + "/server/rest/machine/firmware/check")
                     .request(MediaType.APPLICATION_XML)
-                    .header("Session-Token", textSessionToken.getText())
+                    .headers(createHeaders())
                     .header("Machine-Id", textMachineId.getText())
                     .header("Machine-Brand", cbBrand.getSelectedItem())
                     .post(Entity.entity(objToXml(FirmwareUpdateRequest.class, firmwareUpdateRequestSetting), MediaType.APPLICATION_XML));
@@ -972,7 +976,7 @@ public class MachineForm extends javax.swing.JFrame {
             addMessage("Sending firmware assebly request to server");
             Response response = client.target(server + "/server/rest/machine/firmware/assemble")
                     .request(MediaType.APPLICATION_XML)
-                    .header("Session-Token", textSessionToken.getText())
+                    .headers(createHeaders())
                     .header("Machine-Id", textMachineId.getText())
                     .header("Machine-Brand", cbBrand.getSelectedItem())
                     .post(Entity.entity(objToXml(FirmwareUpdateRequest.class, firmwareUpdateRequestSetting), MediaType.APPLICATION_XML));
@@ -1031,7 +1035,7 @@ public class MachineForm extends javax.swing.JFrame {
                     addMessage("Sending firmware download request to server: chunk " + i);
                     Response response = client.target(server + "/server/rest/machine/firmware/download")
                             .request(MediaType.APPLICATION_XML)
-                            .header("Session-Token", textSessionToken.getText())
+                            .headers(createHeaders())
                             .header("Machine-Id", textMachineId.getText())
                             .header("Machine-Brand", cbBrand.getSelectedItem())
                             .post(Entity.entity(objToXml(FirmwareDownloadRequest.class, request), MediaType.APPLICATION_XML));
@@ -1353,7 +1357,7 @@ public class MachineForm extends javax.swing.JFrame {
         String server = (String) cbServer.getSelectedItem();
         Response response = client.target(server + "/server/rest/im/logout")
                 .request(MediaType.APPLICATION_XML)
-                .header("Session-Token", textSessionToken.getText())
+                .headers(createHeaders())
                 .header("Machine-Id", textMachineId.getText())
                 .header("Machine-Brand", cbBrand.getSelectedItem())
                 .delete();
@@ -1390,7 +1394,7 @@ public class MachineForm extends javax.swing.JFrame {
         addMessage("Sending status to server");
         Response response = client.target(server + "/server/rest/machine/event")
                 .request(MediaType.APPLICATION_XML)
-                .header("Session-Token", textSessionToken.getText())
+                .headers(createHeaders())
                 .header("Machine-Id", textMachineId.getText())
                 .header("Machine-Brand", cbBrand.getSelectedItem())
                 .post(Entity.entity(status, MediaType.APPLICATION_XML));
@@ -1623,6 +1627,17 @@ public class MachineForm extends javax.swing.JFrame {
         textFileSize.setText("");
         textMD5.setText("");
 
+    }
+    
+    private MultivaluedMap<String, Object> createHeaders() {
+            MultivaluedMap< String, Object> map = new MultivaluedHashMap<>();
+
+            if(selectedMode == Mode.PRODUCTION){
+                    map.add("x-user-id", textUserUUID.getText());
+            }else{
+                    map.add("Session-Token", textSessionToken.getText());
+            }
+            return map;
     }
 
 }
